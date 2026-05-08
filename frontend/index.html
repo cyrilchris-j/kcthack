@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>E-Waste Intelligence System | AI-Powered Environmental Analytics</title>
+  <meta name="description" content="AI-powered platform to predict, visualize, and manage e-waste generation across cities using machine learning and geospatial analytics." />
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+
+  <!-- Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ═══════════════════ SIDEBAR ═══════════════════ -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">
+      <i class="fa-solid fa-recycle"></i>
+    </div>
+    <div class="logo-text">
+      <span class="logo-main">EWaste</span>
+      <span class="logo-sub">Intelligence</span>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">ANALYTICS</div>
+    <a href="#" class="nav-item active" data-tab="dashboard" id="nav-dashboard">
+      <i class="fa-solid fa-chart-pie"></i>
+      <span>Dashboard</span>
+    </a>
+    <a href="#" class="nav-item" data-tab="forecast" id="nav-forecast">
+      <i class="fa-solid fa-chart-line"></i>
+      <span>Forecast</span>
+    </a>
+    <a href="#" class="nav-item" data-tab="map" id="nav-map">
+      <i class="fa-solid fa-map-location-dot"></i>
+      <span>GIS Hotspots</span>
+    </a>
+    <div class="nav-section-label" style="margin-top:1.5rem;">TOOLS</div>
+    <a href="#" class="nav-item" data-tab="predict" id="nav-predict">
+      <i class="fa-solid fa-brain"></i>
+      <span>AI Predictor</span>
+    </a>
+    <a href="#" class="nav-item" data-tab="scenario" id="nav-scenario">
+      <i class="fa-solid fa-flask"></i>
+      <span>Scenario Sim</span>
+    </a>
+    <a href="#" class="nav-item" data-tab="cities" id="nav-cities">
+      <i class="fa-solid fa-city"></i>
+      <span>Top Cities</span>
+    </a>
+    <div class="nav-section-label" style="margin-top:1.5rem;">IMPACT</div>
+    <a href="#" class="nav-item" data-tab="solutions" id="nav-solutions">
+      <i class="fa-solid fa-lightbulb"></i>
+      <span>Solutions</span>
+    </a>
+    <a href="#" class="nav-item" data-tab="about" id="nav-about">
+      <i class="fa-solid fa-circle-info"></i>
+      <span>About</span>
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="api-status" id="api-status">
+      <span class="status-dot"></span>
+      <span class="status-text">Connecting...</span>
+    </div>
+  </div>
+</aside>
+
+<!-- ═══════════════════ MAIN ═══════════════════ -->
+<main class="main-content">
+
+  <!-- Top Bar -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="sidebar-toggle" id="sidebar-toggle">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+      <div class="page-info">
+        <h1 class="page-title" id="page-title">Overview Dashboard</h1>
+        <p class="page-subtitle" id="page-subtitle">Real-time e-waste intelligence across India</p>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="year-selector">
+        <label>Year</label>
+        <select id="global-year" onchange="onYearChange()">
+          <option value="2024" selected>2024</option>
+          <option value="2025">2025</option>
+          <option value="2026">2026</option>
+          <option value="2027">2027</option>
+          <option value="2028">2028</option>
+          <option value="2030">2030</option>
+          <option value="2035">2035</option>
+          <option value="2040">2040</option>
+        </select>
+      </div>
+      <div class="current-time" id="current-time"></div>
+    </div>
+  </header>
+
+  <!-- ══ TAB: DASHBOARD ══ -->
+  <section class="tab-panel active" id="tab-dashboard">
+    <!-- KPI Cards -->
+    <div class="kpi-grid">
+      <div class="kpi-card" id="kpi-total">
+        <div class="kpi-icon" style="background:linear-gradient(135deg,#f97316,#ef4444)">
+          <i class="fa-solid fa-trash-can"></i>
+        </div>
+        <div class="kpi-content">
+          <div class="kpi-value" id="kpi-total-val">—</div>
+          <div class="kpi-label">Total E-Waste (MMT)</div>
+          <div class="kpi-delta positive" id="kpi-total-delta">↑ Loading...</div>
+        </div>
+      </div>
+      <div class="kpi-card" id="kpi-cities">
+        <div class="kpi-icon" style="background:linear-gradient(135deg,#8b5cf6,#6366f1)">
+          <i class="fa-solid fa-city"></i>
+        </div>
+        <div class="kpi-content">
+          <div class="kpi-value" id="kpi-cities-val">15</div>
+          <div class="kpi-label">Monitored Cities</div>
+          <div class="kpi-delta neutral">India Coverage</div>
+        </div>
+      </div>
+      <div class="kpi-card" id="kpi-hotspot">
+        <div class="kpi-icon" style="background:linear-gradient(135deg,#ec4899,#f43f5e)">
+          <i class="fa-solid fa-fire"></i>
+        </div>
+        <div class="kpi-content">
+          <div class="kpi-value" id="kpi-hotspot-val">—</div>
+          <div class="kpi-label">Top Hotspot City</div>
+          <div class="kpi-delta negative" id="kpi-hotspot-delta">Critical Risk</div>
+        </div>
+      </div>
+      <div class="kpi-card" id="kpi-recycling">
+        <div class="kpi-icon" style="background:linear-gradient(135deg,#10b981,#059669)">
+          <i class="fa-solid fa-recycle"></i>
+        </div>
+        <div class="kpi-content">
+          <div class="kpi-value">22%</div>
+          <div class="kpi-label">Avg Recycling Rate</div>
+          <div class="kpi-delta negative">Global avg: 17.4%</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="charts-row">
+      <div class="chart-card wide">
+        <div class="chart-header">
+          <div>
+            <h3>E-Waste Generation Trend</h3>
+            <p>Historical &amp; forecasted values (Million Metric Tons)</p>
+          </div>
+          <div class="chart-legend">
+            <span class="legend-item"><span class="legend-dot historical"></span>Historical</span>
+            <span class="legend-item"><span class="legend-dot forecast"></span>Forecast</span>
+          </div>
+        </div>
+        <canvas id="forecastChart" height="100"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <h3>Risk Distribution</h3>
+            <p>Cities by risk level</p>
+          </div>
+        </div>
+        <canvas id="riskChart" height="220"></canvas>
+      </div>
+    </div>
+
+    <!-- Mini Map Preview + Top 3 -->
+    <div class="bottom-row">
+      <div class="map-preview-card">
+        <div class="chart-header">
+          <div>
+            <h3><i class="fa-solid fa-map-location-dot"></i> Hotspot Preview</h3>
+            <p>E-waste density across India</p>
+          </div>
+          <button class="btn-outline" onclick="switchTab('map')">Full Map <i class="fa-solid fa-arrow-right"></i></button>
+        </div>
+        <div id="dashboard-map" style="height:280px;border-radius:12px;overflow:hidden;"></div>
+      </div>
+      <div class="top3-card">
+        <div class="chart-header">
+          <div>
+            <h3><i class="fa-solid fa-trophy"></i> Top Waste Cities</h3>
+            <p id="top3-year-label">2024 rankings</p>
+          </div>
+        </div>
+        <div class="top3-list" id="top3-list">
+          <!-- dynamically filled -->
+        </div>
+        <button class="btn-primary full-width" onclick="switchTab('cities')" style="margin-top:1rem;">
+          Full Rankings <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ TAB: FORECAST ══ -->
+  <section class="tab-panel" id="tab-forecast">
+    <div class="section-intro">
+      <h2>E-Waste Forecast Engine</h2>
+      <p>Adjust parameters to model national e-waste trajectory from 2010 through 2040</p>
+    </div>
+
+    <div class="forecast-controls card">
+      <div class="control-grid">
+        <div class="control-group">
+          <label>Population (Billions)</label>
+          <input type="range" id="fc-population" min="0.5" max="10" step="0.1" value="1.4" oninput="updateForecastControls()" />
+          <span class="control-val" id="fc-pop-val">1.4B</span>
+        </div>
+        <div class="control-group">
+          <label>Device Usage Rate</label>
+          <input type="range" id="fc-device" min="0.1" max="0.99" step="0.01" value="0.5" oninput="updateForecastControls()" />
+          <span class="control-val" id="fc-device-val">50%</span>
+        </div>
+        <button class="btn-primary" onclick="loadForecast()">
+          <i class="fa-solid fa-bolt"></i> Generate Forecast
+        </button>
+      </div>
+    </div>
+
+    <div class="chart-card" style="margin-top:1.5rem;">
+      <div class="chart-header">
+        <div>
+          <h3>30-Year E-Waste Projection</h3>
+          <p>2010 – 2040 • Shaded area represents forecast period</p>
+        </div>
+        <div class="chart-legend">
+          <span class="legend-item"><span class="legend-dot historical"></span>Actual / Estimated</span>
+          <span class="legend-item"><span class="legend-dot forecast"></span>AI Forecast</span>
+        </div>
+      </div>
+      <canvas id="fullForecastChart" height="90"></canvas>
+    </div>
+
+    <div class="stats-row" id="forecast-stats">
+      <!-- filled dynamically -->
+    </div>
+  </section>
+
+  <!-- ══ TAB: MAP ══ -->
+  <section class="tab-panel" id="tab-map">
+    <div class="section-intro">
+      <h2>GIS Hotspot Analysis</h2>
+      <p>Interactive heatmap of e-waste generation density across Indian cities</p>
+    </div>
+    <div class="map-controls card">
+      <div class="control-grid">
+        <div class="control-group">
+          <label>Map Year</label>
+          <select id="map-year" onchange="loadMapData()">
+            <option>2024</option><option>2025</option><option>2026</option>
+            <option>2027</option><option>2028</option><option>2030</option>
+            <option>2035</option><option>2040</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label>Display Mode</label>
+          <select id="map-mode" onchange="loadMapData()">
+            <option value="heat">Heatmap</option>
+            <option value="markers">Markers</option>
+            <option value="both">Both</option>
+          </select>
+        </div>
+        <div class="map-legend-inline">
+          <span class="heat-low">Low</span>
+          <div class="heat-gradient-bar"></div>
+          <span class="heat-high">Critical</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="map-layout">
+      <div id="main-map" style="height:520px;border-radius:16px;overflow:hidden;flex:1;"></div>
+      <div class="map-sidebar">
+        <h4>City Details</h4>
+        <div id="city-detail-panel" class="city-detail-panel">
+          <div class="detail-placeholder">
+            <i class="fa-solid fa-hand-pointer"></i>
+            <p>Click a city marker to view details</p>
+          </div>
+        </div>
+        <div class="city-quick-list" id="city-quick-list">
+          <!-- filled dynamically -->
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ TAB: PREDICT ══ -->
+  <section class="tab-panel" id="tab-predict">
+    <div class="section-intro">
+      <h2>AI Prediction Engine</h2>
+      <p>Input parameters to get real-time e-waste predictions powered by our ML model</p>
+    </div>
+
+    <div class="predict-layout">
+      <div class="predict-form card">
+        <h3><i class="fa-solid fa-sliders"></i> Input Parameters</h3>
+        <div class="form-group">
+          <label for="pred-population">Population (Millions)</label>
+          <div class="input-with-icon">
+            <i class="fa-solid fa-people-group"></i>
+            <input type="number" id="pred-population" value="14.0" min="0.1" max="5000" step="0.1" placeholder="e.g. 14.0" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="pred-device-rate">Device Usage Rate (0–1)</label>
+          <div class="input-with-icon">
+            <i class="fa-solid fa-mobile-screen"></i>
+            <input type="number" id="pred-device-rate" value="0.72" min="0" max="1" step="0.01" placeholder="e.g. 0.72" />
+          </div>
+          <div class="range-hint">
+            <span>Low (0.1)</span><span>High (0.99)</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="pred-year">Target Year</label>
+          <div class="input-with-icon">
+            <i class="fa-solid fa-calendar"></i>
+            <input type="number" id="pred-year" value="2030" min="2024" max="2050" step="1" placeholder="e.g. 2030" />
+          </div>
+        </div>
+        <button class="btn-primary full-width" id="predict-btn" onclick="runPrediction()">
+          <i class="fa-solid fa-brain"></i> Run AI Prediction
+        </button>
+        <button class="btn-export full-width" onclick="exportPrediction()" id="export-pred-btn" style="display:none;margin-top:10px;">
+          <i class="fa-solid fa-download"></i> Save Result as TXT
+        </button>
+      </div>
+
+      <div class="predict-result card" id="predict-result">
+        <div class="result-placeholder" id="result-placeholder">
+          <div class="placeholder-icon"><i class="fa-solid fa-brain"></i></div>
+          <h4>Ready to Predict</h4>
+          <p>Fill in parameters and click "Run AI Prediction" to get instant results</p>
+        </div>
+        <div class="result-data" id="result-data" style="display:none;">
+          <div class="result-badge" id="result-badge">PREDICTION</div>
+          <div class="result-main">
+            <div class="result-value" id="result-value">—</div>
+            <div class="result-unit">Million Metric Tons</div>
+          </div>
+          <div class="result-confidence">
+            <div class="conf-item">
+              <span class="conf-label">Lower Bound</span>
+              <span class="conf-val" id="conf-lower">—</span>
+            </div>
+            <div class="conf-bar-container">
+              <div class="conf-bar" id="conf-bar"></div>
+            </div>
+            <div class="conf-item">
+              <span class="conf-label">Upper Bound</span>
+              <span class="conf-val" id="conf-upper">—</span>
+            </div>
+          </div>
+          <div class="result-meta">
+            <div class="meta-item">
+              <i class="fa-solid fa-calendar"></i>
+              <span id="result-year-label">—</span>
+            </div>
+            <div class="meta-item">
+              <i class="fa-solid fa-people-group"></i>
+              <span id="result-pop-label">—</span>
+            </div>
+            <div class="meta-item">
+              <i class="fa-solid fa-mobile-screen"></i>
+              <span id="result-device-label">—</span>
+            </div>
+          </div>
+          <div class="result-insight" id="result-insight">
+          </div>
+        </div>
+      </div>
+
+      <div class="model-info card">
+        <h3><i class="fa-solid fa-info-circle"></i> Model Info</h3>
+        <div class="model-specs">
+          <div class="spec-item">
+            <span class="spec-label">Algorithm</span>
+            <span class="spec-val">Polynomial Regression (deg 2)</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-label">Features</span>
+            <span class="spec-val">Population, Device Rate, Year</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-label">Training Data</span>
+            <span class="spec-val">2010–2023 (14 data points)</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-label">Confidence</span>
+            <span class="spec-val">±5% interval</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-label">Data Source</span>
+            <span class="spec-val">UN/WHO e-waste Monitor</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ TAB: SCENARIO ══ -->
+  <section class="tab-panel" id="tab-scenario">
+    <div class="section-intro">
+      <h2>Future Scenario Simulation</h2>
+      <p>Model optimistic, baseline, and pessimistic trajectories based on policy interventions</p>
+    </div>
+
+    <div class="scenario-layout">
+      <div class="scenario-controls card">
+        <h3><i class="fa-solid fa-sliders"></i> Simulation Parameters</h3>
+
+        <div class="form-group">
+          <label>Base Population (M)</label>
+          <input type="number" id="sim-pop" value="1.4" min="0.1" max="5000" step="0.1" />
+        </div>
+        <div class="form-group">
+          <label>Base Device Rate (0-1)</label>
+          <input type="number" id="sim-device" value="0.5" min="0.01" max="0.99" step="0.01" />
+        </div>
+        <div class="form-group">
+          <label>Pop. Growth Rate / yr</label>
+          <input type="range" id="sim-growth" min="0.00" max="0.05" step="0.001" value="0.012" oninput="document.getElementById('sim-growth-val').textContent=(+this.value*100).toFixed(1)+'%'" />
+          <span class="control-val" id="sim-growth-val">1.2%</span>
+        </div>
+        <div class="form-group">
+          <label>Tech Adoption Rate / yr</label>
+          <input type="range" id="sim-adoption" min="0.00" max="0.08" step="0.001" value="0.02" oninput="document.getElementById('sim-adopt-val').textContent=(+this.value*100).toFixed(1)+'%'" />
+          <span class="control-val" id="sim-adopt-val">2.0%</span>
+        </div>
+        <div class="form-group">
+          <label>Current Recycling Rate</label>
+          <input type="range" id="sim-recycling" min="0.01" max="0.80" step="0.01" value="0.20" oninput="document.getElementById('sim-recycle-val').textContent=(+this.value*100).toFixed(0)+'%'" />
+          <span class="control-val" id="sim-recycle-val">20%</span>
+        </div>
+        <div class="form-group">
+          <label>Forecast Horizon</label>
+          <select id="sim-end-year">
+            <option value="2030">2030</option>
+            <option value="2035">2035</option>
+            <option value="2040" selected>2040</option>
+            <option value="2050">2050</option>
+          </select>
+        </div>
+
+        <button class="btn-primary full-width" onclick="runScenario()">
+          <i class="fa-solid fa-flask"></i> Run Simulation
+        </button>
+      </div>
+
+      <div class="scenario-chart-area">
+        <div class="chart-card" style="height:100%;">
+          <div class="chart-header">
+            <div>
+              <h3>Scenario Comparison</h3>
+              <p>MMT net e-waste after recycling recovery</p>
+            </div>
+            <div class="scenario-legend">
+              <span class="legend-item"><span class="legend-dot" style="background:#10b981"></span>Optimistic</span>
+              <span class="legend-item"><span class="legend-dot" style="background:#f59e0b"></span>Baseline</span>
+              <span class="legend-item"><span class="legend-dot" style="background:#ef4444"></span>Pessimistic</span>
+            </div>
+          </div>
+          <canvas id="scenarioChart" height="140"></canvas>
+          <div class="scenario-summary" id="scenario-summary">
+            <!-- filled dynamically -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ TAB: CITIES ══ -->
+  <section class="tab-panel" id="tab-cities">
+    <div class="section-intro">
+      <h2>Top E-Waste Cities</h2>
+      <p>Ranked by projected e-waste generation volume with detailed breakdown</p>
+    </div>
+
+    <div class="year-tabs">
+      <button class="year-tab active" onclick="loadCitiesYear(2024, this)">2024</button>
+      <button class="year-tab" onclick="loadCitiesYear(2025, this)">2025</button>
+      <button class="year-tab" onclick="loadCitiesYear(2027, this)">2027</button>
+      <button class="year-tab" onclick="loadCitiesYear(2030, this)">2030</button>
+      <button class="year-tab" onclick="loadCitiesYear(2035, this)">2035</button>
+      <button class="year-tab" onclick="loadCitiesYear(2040, this)">2040</button>
+    </div>
+
+    <div class="cities-podium" id="cities-podium">
+      <!-- top 3 podium -->
+    </div>
+
+    <div class="cities-table-card card">
+      <div class="export-bar">
+        <span class="export-bar-label" id="cities-count-label">All 15 monitored cities</span>
+        <button class="btn-export" id="export-csv-btn" onclick="exportCitiesCSV()">
+          <i class="fa-solid fa-file-csv"></i> Export CSV
+        </button>
+      </div>
+      <div style="overflow-x:auto;">
+      <table class="cities-table" id="cities-table">
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>City</th>
+            <th>E-Waste (kt)</th>
+            <th>Population (M)</th>
+            <th>Device Rate</th>
+            <th>Recycling Rate</th>
+            <th>Risk Level</th>
+            <th>Trend</th>
+          </tr>
+        </thead>
+        <tbody id="cities-table-body">
+        </tbody>
+      </table>
+      </div>
+    </div>
+
+    <div class="chart-card" style="margin-top:1.5rem;">
+      <div class="chart-header">
+        <div>
+          <h3>City Comparison Chart</h3>
+          <p>E-waste generation by city (kilotons)</p>
+        </div>
+      </div>
+      <canvas id="cityBarChart" height="80"></canvas>
+    </div>
+  </section>
+
+  <!-- ══ TAB: SOLUTIONS ══ -->
+  <section class="tab-panel" id="tab-solutions">
+    <div class="section-intro">
+      <h2>Policy Recommendations Engine</h2>
+    <p>AI-driven, city-specific actionable solutions based on real-time risk profiles and predictive analytics</p>
+  </div>
+
+  <!-- Summary Banner -->
+  <div class="solutions-banner">
+    <div class="banner-stat">
+      <div class="banner-num" id="sol-total-waste">—</div>
+      <div class="banner-label">Total E-Waste Monitored (kt)</div>
+    </div>
+    <div class="banner-stat">
+      <div class="banner-num" id="sol-critical-count">—</div>
+      <div class="banner-label">Critical Risk Cities</div>
+    </div>
+    <div class="banner-stat">
+      <div class="banner-num" id="sol-avg-recycling">—</div>
+      <div class="banner-label">Avg. Recycling Rate</div>
+    </div>
+    <div class="banner-stat">
+      <div class="banner-num">35%</div>
+      <div class="banner-label">Potential Reduction by 2030</div>
+    </div>
+  </div>
+
+  <!-- City-level Recommendations -->
+  <div class="solutions-grid" id="solutions-grid">
+    <div style="color:var(--text-muted);padding:40px;text-align:center;">
+      <i class="fa-solid fa-spinner fa-spin" style="font-size:24px;margin-bottom:12px;"></i>
+      <p>Loading recommendations...</p>
+    </div>
+  </div>
+
+  <!-- National Policy Timeline -->
+  <div class="card national-policies">
+    <div class="chart-header">
+      <div>
+        <h3><i class="fa-solid fa-landmark"></i> National Policy Framework</h3>
+        <p>Recommended phased interventions for Government of India</p>
+      </div>
+      <button class="btn-export" onclick="exportSolutionReport()">
+        <i class="fa-solid fa-file-arrow-down"></i> Export Report
+      </button>
+    </div>
+    <div class="policy-timeline">
+      <div class="policy-item urgent">
+        <div class="policy-year">2024–2025</div>
+        <div class="policy-content">
+          <h4>Strengthen EPR Framework</h4>
+          <p>Mandate Extended Producer Responsibility targets — increase from current 30% to 60% collection efficiency for all electronics manufacturers operating in India.</p>
+          <div class="policy-impact"><i class="fa-solid fa-arrow-trend-down"></i> Estimated 12% waste reduction in formal streams</div>
+        </div>
+      </div>
+      <div class="policy-item">
+        <div class="policy-year">2025–2027</div>
+        <div class="policy-content">
+          <h4>Urban E-Waste Collection Network</h4>
+          <p>Deploy 500+ dedicated e-waste collection kiosks in top 15 cities. Partner with municipal corporations for door-to-door collection drives quarterly.</p>
+          <div class="policy-impact"><i class="fa-solid fa-arrow-trend-down"></i> Estimated 18% increase in formal recycling rate</div>
+        </div>
+      </div>
+      <div class="policy-item">
+        <div class="policy-year">2027–2030</div>
+        <div class="policy-content">
+          <h4>Circular Economy Transition</h4>
+          <p>Establish 10 state-of-the-art e-waste processing parks. Formalize informal recycling sector with training, safety certification, and fair wages. Target 40% national formal recycling rate.</p>
+          <div class="policy-impact"><i class="fa-solid fa-arrow-trend-down"></i> Estimated 35% overall reduction vs baseline trajectory</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ TAB: ABOUT ══ -->
+<section class="tab-panel" id="tab-about">
+  <!-- Hero -->
+  <div class="about-hero">
+    <div class="about-hero-content">
+      <div class="about-badge">🏆 Hackathon Project — KIT 2026</div>
+      <h2>E-Waste Intelligence System</h2>
+      <p>India generates over <strong>3.23 million metric tons</strong> of electronic waste annually — ranking <strong>3rd globally</strong>. Yet only <strong>22% is formally recycled</strong>, leaving toxic lead, mercury, and cadmium in landfills and unprotected waterways.</p>
+      <p style="margin-top:12px;">We built an AI-powered platform to <strong>predict, visualize, and guide policymakers</strong> in managing India's e-waste crisis before it becomes irreversible.</p>
+    </div>
+    <div class="about-hero-stats">
+      <div class="hero-stat-card">
+        <div class="hero-stat-num">62 <span>MMT</span></div>
+        <div class="hero-stat-label">Global E-Waste (2022)</div>
+        <div class="hero-stat-sub">↑ Growing 4% annually</div>
+      </div>
+      <div class="hero-stat-card">
+        <div class="hero-stat-num">#3</div>
+        <div class="hero-stat-label">India's Global Rank</div>
+        <div class="hero-stat-sub">In e-waste generation</div>
+      </div>
+      <div class="hero-stat-card">
+        <div class="hero-stat-num">22<span>%</span></div>
+        <div class="hero-stat-label">Formal Recycling Rate</div>
+        <div class="hero-stat-sub">vs 40% global target</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Problem + Solution -->
+  <div class="about-two-col">
+    <div class="card problem-card">
+      <h3><i class="fa-solid fa-triangle-exclamation" style="color:#ef4444;"></i> The Problem</h3>
+      <div class="problem-points">
+        <div class="problem-point">
+          <i class="fa-solid fa-circle-xmark" style="color:#ef4444;"></i>
+          <div><strong>Uncontrolled Growth:</strong> India's e-waste grew 151% over the past decade, driven by rising device penetration and rapid obsolescence cycles.</div>
+        </div>
+        <div class="problem-point">
+          <i class="fa-solid fa-circle-xmark" style="color:#ef4444;"></i>
+          <div><strong>Informal Recycling Risks:</strong> 95% of e-waste is processed by informal workers without safety equipment, causing lead, mercury, and cadmium poisoning.</div>
+        </div>
+        <div class="problem-point">
+          <i class="fa-solid fa-circle-xmark" style="color:#ef4444;"></i>
+          <div><strong>No Predictive Tools:</strong> Policymakers lack data-driven forecasting to proactively allocate resources and implement regulations ahead of waste peaks.</div>
+        </div>
+        <div class="problem-point">
+          <i class="fa-solid fa-circle-xmark" style="color:#ef4444;"></i>
+          <div><strong>Urban Concentration:</strong> Top 5 cities account for 62% of all e-waste, yet lack targeted city-level policies and monitoring systems.</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h3><i class="fa-solid fa-circle-check" style="color:#10b981;"></i> Our Solution</h3>
+      <div class="features-grid">
+        <div class="feature-item">
+          <div class="feature-icon" style="background:linear-gradient(135deg,#3d8ef8,#8b5cf6);"><i class="fa-solid fa-brain"></i></div>
+          <div><div class="feature-title">ML Prediction Engine</div><div class="feature-desc">Polynomial regression trained on 2010–2023 data, forecasting e-waste volumes through 2040</div></div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon" style="background:linear-gradient(135deg,#ec4899,#f43f5e);"><i class="fa-solid fa-map-location-dot"></i></div>
+          <div><div class="feature-title">GIS Heatmap Analysis</div><div class="feature-desc">Interactive city-level heatmaps showing e-waste density and risk levels across India</div></div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon" style="background:linear-gradient(135deg,#f59e0b,#ef4444);"><i class="fa-solid fa-flask"></i></div>
+          <div><div class="feature-title">Scenario Simulation</div><div class="feature-desc">Model optimistic, baseline, and pessimistic trajectories under different policy interventions</div></div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon" style="background:linear-gradient(135deg,#10b981,#059669);"><i class="fa-solid fa-lightbulb"></i></div>
+          <div><div class="feature-title">Policy Recommendations</div><div class="feature-desc">AI-generated, city-specific policy recommendations with estimated impact percentages</div></div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon" style="background:linear-gradient(135deg,#8b5cf6,#6366f1);"><i class="fa-solid fa-chart-line"></i></div>
+          <div><div class="feature-title">30-Year Forecasts</div><div class="feature-desc">Year-by-year projections from 2010–2040 with confidence intervals and growth analysis</div></div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon" style="background:linear-gradient(135deg,#06b6d4,#3d8ef8);"><i class="fa-solid fa-file-export"></i></div>
+          <div><div class="feature-title">Report Export</div><div class="feature-desc">Download city rankings as CSV and AI prediction results as formatted text reports</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tech Stack -->
+  <div class="card" style="margin-top:1.5rem;">
+    <h3><i class="fa-solid fa-code"></i> Technology Stack</h3>
+    <div class="tech-stack">
+      <div class="tech-badge" style="background:rgba(59,130,246,0.15);border-color:rgba(59,130,246,0.4);color:#60a5fa;"><i class="fa-brands fa-python"></i> Python 3.9</div>
+      <div class="tech-badge" style="background:rgba(239,68,68,0.12);border-color:rgba(239,68,68,0.35);color:#f87171;">Flask 3.0</div>
+      <div class="tech-badge" style="background:rgba(245,158,11,0.12);border-color:rgba(245,158,11,0.35);color:#fbbf24;">scikit-learn</div>
+      <div class="tech-badge" style="background:rgba(139,92,246,0.15);border-color:rgba(139,92,246,0.4);color:#a78bfa;">NumPy</div>
+      <div class="tech-badge" style="background:rgba(16,185,129,0.12);border-color:rgba(16,185,129,0.35);color:#34d399;"><i class="fa-brands fa-js"></i> Vanilla JS</div>
+      <div class="tech-badge" style="background:rgba(249,115,22,0.12);border-color:rgba(249,115,22,0.35);color:#fb923c;">Chart.js 4</div>
+      <div class="tech-badge" style="background:rgba(6,182,212,0.12);border-color:rgba(6,182,212,0.35);color:#22d3ee;">Leaflet.js</div>
+      <div class="tech-badge" style="background:rgba(99,148,255,0.12);border-color:rgba(99,148,255,0.35);color:#7b9cc9;">Flask-CORS</div>
+    </div>
+  </div>
+
+  <!-- Data Sources -->
+  <div class="card" style="margin-top:1.5rem;">
+    <h3><i class="fa-solid fa-database"></i> Data Sources &amp; References</h3>
+    <div class="data-sources">
+      <div class="source-item">
+        <i class="fa-solid fa-book" style="color:var(--accent);"></i>
+        <div>
+          <strong>Global E-Waste Monitor 2023</strong> — United Nations University / ITU / UNITAR
+          <div class="source-desc">Primary source for global e-waste generation statistics, country-level data, and growth projections</div>
+        </div>
+      </div>
+      <div class="source-item">
+        <i class="fa-solid fa-book" style="color:var(--accent);"></i>
+        <div>
+          <strong>E-Waste Management Rules 2022</strong> — Ministry of Environment, Forest &amp; Climate Change, India
+          <div class="source-desc">EPR targets, formal recycling norms, and manufacturer compliance framework</div>
+        </div>
+      </div>
+      <div class="source-item">
+        <i class="fa-solid fa-book" style="color:var(--accent);"></i>
+        <div>
+          <strong>Census of India 2021</strong> — Office of the Registrar General of India
+          <div class="source-desc">Population statistics and demographic data used for ML model training and city-level analysis</div>
+        </div>
+      </div>
+      <div class="source-item">
+        <i class="fa-solid fa-book" style="color:var(--accent);"></i>
+        <div>
+          <strong>ASSOCHAM E-Waste Report 2023</strong> — Associated Chambers of Commerce &amp; Industry of India
+          <div class="source-desc">City-level device penetration rates, informal sector statistics, and recycler data</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loading-overlay">
+  <div class="loading-spinner">
+    <div class="spinner-ring"></div>
+    <p>Processing...</p>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
