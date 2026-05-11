@@ -1,0 +1,17 @@
+exclude:
+  - backend/
+  - venv/
+  - requirements.txt
+  - app.py
+  - predictor.py
+  - scenario.py
+  - forecast.py
+  - cities.py
+  - city_data.py
+  - prediction.py
+  - __init__.py
+  - Gemfile
+  - Gemfile.lock
+  - node_modules/
+  - .gitignore
+  - README.md
