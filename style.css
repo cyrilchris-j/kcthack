@@ -1562,30 +1562,199 @@ input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
 }
 
 /* ══════════════════════════ RESPONSIVE (ENHANCED) ══════════════════════════ */
+/* ══════════════════════════ RESPONSIVE SYSTEM ══════════════════════════ */
+
+/* ── Sidebar Overlay ── */
+.sidebar-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(4px);
+  z-index: 90;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.sidebar-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ── Large Screen Adjustments ── */
 @media (max-width: 1200px) {
-  .solutions-banner { grid-template-columns: repeat(2, 1fr); }
-  .solutions-grid   { grid-template-columns: 1fr; }
-  .about-hero       { grid-template-columns: 1fr; }
-  .about-two-col    { grid-template-columns: 1fr; }
-  .about-hero-stats { flex-direction: row; }
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .charts-row { grid-template-columns: 1fr; }
+  .bottom-row { grid-template-columns: 1fr; }
+  .predict-layout { grid-template-columns: 1fr 1fr; }
+  .scenario-layout { grid-template-columns: 1fr; }
 }
 
-@media (max-width: 900px) {
-  .solutions-banner { grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 16px; }
-  .solutions-grid   { grid-template-columns: 1fr; }
-  .about-two-col    { grid-template-columns: 1fr; }
-  .policy-item      { grid-template-columns: 80px 1fr; }
-  .policy-timeline::before { left: 40px; }
+/* ── Tablet & Small Desktop (Mobile Mode Start) ── */
+@media (max-width: 1024px) {
+  :root {
+    --sidebar-w: 280px;
+  }
+
+  .sidebar {
+    transform: translateX(-100%);
+    box-shadow: 20px 0 50px rgba(0,0,0,0.5);
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .main-content {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .sidebar-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px; height: 40px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+  }
+
+  .topbar {
+    padding: 12px 20px;
+  }
+
+  .tab-panel {
+    padding: 20px;
+  }
+
+  .predict-layout {
+    grid-template-columns: 1fr;
+  }
 }
 
-@media (max-width: 600px) {
-  .solutions-banner { grid-template-columns: repeat(2, 1fr); }
-  .about-hero-stats { flex-direction: column; }
-  .hero-stat-card   { text-align: left; }
-  .policy-item      { grid-template-columns: 1fr; }
-  .policy-year      { text-align: left; }
-  .policy-timeline::before { display: none; }
-  .tech-stack       { gap: 8px; }
-  .tech-badge       { font-size: 12px; padding: 5px 10px; }
-  .export-bar       { flex-direction: column; gap: 10px; align-items: flex-start; }
+/* ── Mobile Specific ── */
+@media (max-width: 640px) {
+  .kpi-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .topbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .topbar-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .page-title {
+    font-size: 18px;
+  }
+
+  .kpi-value {
+    font-size: 24px;
+  }
+
+  .stats-row {
+    grid-template-columns: 1fr;
+  }
+
+  .map-layout {
+    flex-direction: column;
+  }
+
+  .map-sidebar {
+    width: 100%;
+  }
+
+  #main-map {
+    height: 350px !important;
+  }
+
+  .cities-podium {
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .podium-item {
+    width: 100%;
+    max-width: 300px;
+  }
+
+  .year-tabs {
+    overflow-x: auto;
+    white-space: nowrap;
+    padding-bottom: 8px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .year-tab {
+    flex-shrink: 0;
+  }
+
+  /* Table responsiveness */
+  .cities-table-card {
+    padding: 12px;
+  }
+
+  .cities-table th, .cities-table td {
+    padding: 10px 8px;
+    font-size: 12px;
+  }
+
+  .solutions-banner {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .banner-stat {
+    padding: 12px;
+  }
+
+  .banner-num {
+    font-size: 20px;
+  }
+
+  .national-policies {
+    padding: 16px;
+  }
+
+  .policy-item {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .policy-year {
+    width: auto;
+    display: inline-block;
+    padding: 4px 12px;
+    background: var(--accent-glow);
+    border-radius: 6px;
+    font-size: 12px;
+  }
+
+  .about-hero-stats {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  /* Prevent out-of-bound elements */
+  .card, .chart-card, .tab-panel {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  /* Ensure inputs don't zoom on iOS */
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* ── Animation for Sidebar ── */
+.sidebar {
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }

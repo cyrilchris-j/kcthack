@@ -73,11 +73,36 @@ function switchTab(tabId) {
   document.getElementById('page-subtitle').textContent = info.subtitle;
 
   // Lazy-load tab content
-  if (tabId === 'map' && !window._mapLoaded) { initMainMap(); window._mapLoaded = true; }
+  if (tabId === 'map') {
+    if (!window._mapLoaded) {
+      initMainMap();
+      window._mapLoaded = true;
+    } else if (mainMap) {
+      setTimeout(() => mainMap.invalidateSize(), 100);
+    }
+  }
+  if (tabId === 'dashboard' && dashMap) {
+    setTimeout(() => dashMap.invalidateSize(), 100);
+  }
   if (tabId === 'forecast') loadForecast();
   if (tabId === 'scenario' && !window._scenarioRan) { runScenario(); window._scenarioRan = true; }
   if (tabId === 'cities') loadCitiesYear(+document.querySelector('.year-tab.active')?.textContent || 2024);
   if (tabId === 'solutions' && !window._solutionsLoaded) { loadSolutions(); window._solutionsLoaded = true; }
+}
+
+function toggleSidebar(force) {
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  
+  const isOpen = force !== undefined ? force : !sidebar.classList.contains('open');
+  
+  if (isOpen) {
+    sidebar.classList.add('open');
+    overlay.classList.add('active');
+  } else {
+    sidebar.classList.remove('open');
+    overlay.classList.remove('active');
+  }
 }
 
 document.querySelectorAll('.nav-item').forEach(item => {
@@ -85,12 +110,16 @@ document.querySelectorAll('.nav-item').forEach(item => {
     e.preventDefault();
     switchTab(item.dataset.tab);
     // Mobile: close sidebar
-    if (window.innerWidth < 900) document.getElementById('sidebar').classList.remove('open');
+    if (window.innerWidth < 1024) toggleSidebar(false);
   });
 });
 
-document.getElementById('sidebar-toggle').addEventListener('click', () => {
-  document.getElementById('sidebar').classList.toggle('open');
+document.getElementById('sidebar-toggle').addEventListener('click', () => toggleSidebar());
+document.getElementById('sidebar-overlay').addEventListener('click', () => toggleSidebar(false));
+
+window.addEventListener('resize', () => {
+  if (mainMap) mainMap.invalidateSize();
+  if (dashMap) dashMap.invalidateSize();
 });
 
 function onYearChange() {

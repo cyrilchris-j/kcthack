@@ -73,11 +73,36 @@ function switchTab(tabId) {
   document.getElementById('page-subtitle').textContent = info.subtitle;
 
   // Lazy-load tab content
-  if (tabId === 'map' && !window._mapLoaded) { initMainMap(); window._mapLoaded = true; }
+  if (tabId === 'map') {
+    if (!window._mapLoaded) {
+      initMainMap();
+      window._mapLoaded = true;
+    } else if (mainMap) {
+      setTimeout(() => mainMap.invalidateSize(), 100);
+    }
+  }
+  if (tabId === 'dashboard' && dashMap) {
+    setTimeout(() => dashMap.invalidateSize(), 100);
+  }
   if (tabId === 'forecast') loadForecast();
   if (tabId === 'scenario' && !window._scenarioRan) { runScenario(); window._scenarioRan = true; }
   if (tabId === 'cities') loadCitiesYear(+document.querySelector('.year-tab.active')?.textContent || 2024);
   if (tabId === 'solutions' && !window._solutionsLoaded) { loadSolutions(); window._solutionsLoaded = true; }
+}
+
+function toggleSidebar(force) {
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  
+  const isOpen = force !== undefined ? force : !sidebar.classList.contains('open');
+  
+  if (isOpen) {
+    sidebar.classList.add('open');
+    overlay.classList.add('active');
+  } else {
+    sidebar.classList.remove('open');
+    overlay.classList.remove('active');
+  }
 }
 
 document.querySelectorAll('.nav-item').forEach(item => {
@@ -85,12 +110,16 @@ document.querySelectorAll('.nav-item').forEach(item => {
     e.preventDefault();
     switchTab(item.dataset.tab);
     // Mobile: close sidebar
-    if (window.innerWidth < 900) document.getElementById('sidebar').classList.remove('open');
+    if (window.innerWidth < 1024) toggleSidebar(false);
   });
 });
 
-document.getElementById('sidebar-toggle').addEventListener('click', () => {
-  document.getElementById('sidebar').classList.toggle('open');
+document.getElementById('sidebar-toggle').addEventListener('click', () => toggleSidebar());
+document.getElementById('sidebar-overlay').addEventListener('click', () => toggleSidebar(false));
+
+window.addEventListener('resize', () => {
+  if (mainMap) mainMap.invalidateSize();
+  if (dashMap) dashMap.invalidateSize();
 });
 
 function onYearChange() {
@@ -108,7 +137,7 @@ function destroyChart(id) {
 }
 
 // Chart.js global defaults
-Chart.defaults.color = '#4b5e74';
+Chart.defaults.color = '#7b9cc9';
 Chart.defaults.font.family = "'Inter', sans-serif";
 Chart.defaults.plugins.legend.display = false;
 
@@ -163,12 +192,12 @@ function renderDashboardForecastChart(data) {
   const splitIdx = data.forecast.findIndex(d => d.is_forecast);
 
   const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-  gradient.addColorStop(0, 'rgba(59,130,246,0.18)');
-  gradient.addColorStop(1, 'rgba(59,130,246,0)');
+  gradient.addColorStop(0, 'rgba(61,142,248,0.3)');
+  gradient.addColorStop(1, 'rgba(61,142,248,0)');
 
   const gradientFc = ctx.createLinearGradient(0, 0, 0, 300);
-  gradientFc.addColorStop(0, 'rgba(99,102,241,0.15)');
-  gradientFc.addColorStop(1, 'rgba(99,102,241,0)');
+  gradientFc.addColorStop(0, 'rgba(139,92,246,0.25)');
+  gradientFc.addColorStop(1, 'rgba(139,92,246,0)');
 
   charts['forecastChart'] = new Chart(ctx, {
     type: 'line',
@@ -178,28 +207,28 @@ function renderDashboardForecastChart(data) {
         {
           label: 'Historical',
           data: vals.map((v, i) => i < splitIdx ? v : null),
-          borderColor: '#3b82f6',
+          borderColor: '#3d8ef8',
           backgroundColor: gradient,
           borderWidth: 2.5,
           fill: true,
           tension: 0.4,
           pointRadius: 4,
-          pointBackgroundColor: '#3b82f6',
-          pointBorderColor: '#ffffff',
+          pointBackgroundColor: '#3d8ef8',
+          pointBorderColor: '#060b14',
           pointBorderWidth: 2,
         },
         {
           label: 'Forecast',
           data: vals.map((v, i) => i >= splitIdx - 1 ? v : null),
-          borderColor: '#6366f1',
+          borderColor: '#8b5cf6',
           backgroundColor: gradientFc,
           borderWidth: 2.5,
           fill: true,
           tension: 0.4,
           borderDash: [6, 3],
           pointRadius: 4,
-          pointBackgroundColor: '#6366f1',
-          pointBorderColor: '#ffffff',
+          pointBackgroundColor: '#8b5cf6',
+          pointBorderColor: '#060b14',
           pointBorderWidth: 2,
         }
       ]
@@ -209,11 +238,11 @@ function renderDashboardForecastChart(data) {
       interaction: { mode: 'index', intersect: false },
       plugins: {
         tooltip: {
-          backgroundColor: '#ffffff',
-          borderColor: 'rgba(59,130,246,0.15)',
+          backgroundColor: '#0d1626',
+          borderColor: 'rgba(99,148,255,0.2)',
           borderWidth: 1,
-          titleColor: '#1a2332',
-          bodyColor: '#4b5e74',
+          titleColor: '#e8f0ff',
+          bodyColor: '#7b9cc9',
           padding: 12,
           callbacks: {
             label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y?.toFixed(2) || '—'} MMT`
@@ -221,8 +250,8 @@ function renderDashboardForecastChart(data) {
         }
       },
       scales: {
-        x: { grid: { color: 'rgba(59,130,246,0.06)', drawBorder: false }, ticks: { maxTicksLimit: 10 } },
-        y: { grid: { color: 'rgba(59,130,246,0.06)', drawBorder: false }, ticks: { callback: v => v + ' MMT' } }
+        x: { grid: { color: 'rgba(99,148,255,0.05)', drawBorder: false }, ticks: { maxTicksLimit: 10 } },
+        y: { grid: { color: 'rgba(99,148,255,0.08)', drawBorder: false }, ticks: { callback: v => v + ' MMT' } }
       }
     }
   });
@@ -240,8 +269,8 @@ function renderRiskChart(data) {
       labels: ['Critical', 'High', 'Medium', 'Low'],
       datasets: [{
         data: Object.values(counts),
-        backgroundColor: ['#ef4444', '#f97316', '#3b82f6', '#10b981'],
-        borderColor: '#ffffff',
+        backgroundColor: ['#ef4444', '#f59e0b', '#3d8ef8', '#10b981'],
+        borderColor: '#0d1626',
         borderWidth: 3,
         hoverOffset: 8,
       }]
@@ -262,11 +291,9 @@ function renderRiskChart(data) {
           }}
         },
         tooltip: {
-          backgroundColor: '#ffffff',
-          borderColor: 'rgba(59,130,246,0.15)',
+          backgroundColor: '#0d1626',
+          borderColor: 'rgba(99,148,255,0.2)',
           borderWidth: 1,
-          titleColor: '#1a2332',
-          bodyColor: '#4b5e74',
           callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed} cities` }
         }
       }
@@ -290,7 +317,7 @@ async function renderDashboardMap(citiesData) {
       attributionControl: false
     });
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
       attribution: '© CARTO',
       maxZoom: 18
     }).addTo(dashMap);
@@ -357,11 +384,11 @@ function renderFullForecastChart(data) {
   const splitIdx = data.forecast.findIndex(d => d.is_forecast);
 
   const gradH = ctx.createLinearGradient(0, 0, 0, 400);
-  gradH.addColorStop(0, 'rgba(59,130,246,0.15)');
+  gradH.addColorStop(0, 'rgba(61,142,248,0.25)');
   gradH.addColorStop(1, 'transparent');
 
   const gradF = ctx.createLinearGradient(0, 0, 0, 400);
-  gradF.addColorStop(0, 'rgba(99,102,241,0.12)');
+  gradF.addColorStop(0, 'rgba(139,92,246,0.2)');
   gradF.addColorStop(1, 'transparent');
 
   charts['fullForecastChart'] = new Chart(ctx, {
@@ -372,28 +399,28 @@ function renderFullForecastChart(data) {
         {
           label: 'Actual / Estimated',
           data: vals.map((v, i) => i < splitIdx ? v : null),
-          borderColor: '#3b82f6',
+          borderColor: '#3d8ef8',
           backgroundColor: gradH,
           borderWidth: 3,
           fill: true,
           tension: 0.4,
           pointRadius: 5,
-          pointBackgroundColor: '#3b82f6',
-          pointBorderColor: '#ffffff',
+          pointBackgroundColor: '#3d8ef8',
+          pointBorderColor: '#060b14',
           pointBorderWidth: 2,
         },
         {
           label: 'AI Forecast',
           data: vals.map((v, i) => i >= splitIdx - 1 ? v : null),
-          borderColor: '#6366f1',
+          borderColor: '#8b5cf6',
           backgroundColor: gradF,
           borderWidth: 3,
           fill: true,
           tension: 0.4,
           borderDash: [8, 4],
           pointRadius: 4,
-          pointBackgroundColor: '#6366f1',
-          pointBorderColor: '#ffffff',
+          pointBackgroundColor: '#8b5cf6',
+          pointBorderColor: '#060b14',
           pointBorderWidth: 2,
         }
       ]
@@ -403,11 +430,11 @@ function renderFullForecastChart(data) {
       interaction: { mode: 'index', intersect: false },
       plugins: {
         tooltip: {
-          backgroundColor: '#ffffff',
-          borderColor: 'rgba(59,130,246,0.15)',
+          backgroundColor: '#13203a',
+          borderColor: 'rgba(99,148,255,0.2)',
           borderWidth: 1,
-          titleColor: '#1a2332',
-          bodyColor: '#4b5e74',
+          titleColor: '#e8f0ff',
+          bodyColor: '#7b9cc9',
           padding: 14,
           callbacks: {
             label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y?.toFixed(2) || '—'} MMT`
@@ -419,15 +446,15 @@ function renderFullForecastChart(data) {
               type: 'line',
               xMin: splitIdx - 1,
               xMax: splitIdx - 1,
-              borderColor: 'rgba(99,102,241,0.4)',
+              borderColor: 'rgba(139,92,246,0.5)',
               borderWidth: 2,
               borderDash: [5, 5],
               label: {
                 content: '← Forecast Begins',
                 display: true,
-                color: '#6366f1',
+                color: '#8b5cf6',
                 position: 'start',
-                backgroundColor: 'rgba(99,102,241,0.06)',
+                backgroundColor: 'rgba(139,92,246,0.1)',
                 font: { size: 11, weight: '600' },
                 padding: { x: 8, y: 4 }
               }
@@ -437,13 +464,13 @@ function renderFullForecastChart(data) {
       },
       scales: {
         x: {
-          grid: { color: 'rgba(59,130,246,0.06)', drawBorder: false },
+          grid: { color: 'rgba(99,148,255,0.06)', drawBorder: false },
           ticks: { maxTicksLimit: 12 }
         },
         y: {
-          grid: { color: 'rgba(59,130,246,0.06)', drawBorder: false },
+          grid: { color: 'rgba(99,148,255,0.08)', drawBorder: false },
           ticks: { callback: v => v + ' MMT' },
-          title: { display: true, text: 'Million Metric Tons', color: '#8a9bb5' }
+          title: { display: true, text: 'Million Metric Tons', color: '#4a6280' }
         }
       }
     }
@@ -489,7 +516,7 @@ function initMainMap() {
     attributionControl: false
   });
 
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_matter_no_labels/{z}/{x}/{y}{r}.png', {
     attribution: '© CARTO',
     maxZoom: 18
   }).addTo(mainMap);
@@ -527,17 +554,17 @@ async function loadMapData() {
     if (mode === 'markers' || mode === 'both') {
       data.cities.forEach(city => {
         const color = city.risk_level === 'Critical' ? '#ef4444' :
-                      city.risk_level === 'High'     ? '#f97316' :
-                      city.risk_level === 'Medium'   ? '#3b82f6' : '#10b981';
+                      city.risk_level === 'High'     ? '#f59e0b' :
+                      city.risk_level === 'Medium'   ? '#3d8ef8' : '#10b981';
 
         const icon = L.divIcon({
           className: '',
           html: `<div style="
             width:14px; height:14px; border-radius:50%;
             background:${color};
-            border:3px solid rgba(255,255,255,0.7);
-            box-shadow:0 0 8px ${color}60;
-         "></div>`,
+            border:3px solid rgba(255,255,255,0.4);
+            box-shadow:0 0 10px ${color}80;
+          "></div>`,
           iconSize: [14, 14],
           iconAnchor: [7, 7]
         });
@@ -572,34 +599,34 @@ async function loadMapData() {
   }
 }
 
-function showCityDetail(city, color = '#3b82f6') {
+function showCityDetail(city, color = '#3d8ef8') {
   const panel = document.getElementById('city-detail-panel');
   const riskClass = 'risk-' + city.risk_level;
   panel.innerHTML = `
     <div style="margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
-      <div style="font-family:'Space Grotesk',sans-serif; font-size:16px; font-weight:700; color:#1a2332;">${city.name}</div>
-      <span class="risk-badge risk-${city.risk_level}">${city.risk_level}</span>
+      <div style="font-family:'Space Grotesk',sans-serif; font-size:16px; font-weight:700;">${city.name}</div>
+      <span class="risk-badge ${riskClass}">${city.risk_level}</span>
     </div>
     <div style="width:100%; height:3px; background:linear-gradient(90deg,${color},transparent); border-radius:2px; margin-bottom:14px;"></div>
     <div style="display:flex; flex-direction:column; gap:8px; font-size:13px;">
       <div style="display:flex; justify-content:space-between;">
-        <span style="color:#8a9bb5">E-Waste</span>
-        <span style="font-weight:700; color:#ea580c">${city.waste_kt} kt</span>
+        <span style="color:var(--text-muted)">E-Waste</span>
+        <span style="font-weight:700; color:var(--warning)">${city.waste_kt} kt</span>
       </div>
       <div style="display:flex; justify-content:space-between;">
-        <span style="color:#8a9bb5">Population</span>
-        <span style="font-weight:600; color:#1a2332;">${city.population}M</span>
+        <span style="color:var(--text-muted)">Population</span>
+        <span style="font-weight:600;">${city.population}M</span>
       </div>
       <div style="display:flex; justify-content:space-between;">
-        <span style="color:#8a9bb5">Device Rate</span>
-        <span style="font-weight:600; color:#1a2332;">${(city.device_rate * 100).toFixed(0)}%</span>
+        <span style="color:var(--text-muted)">Device Rate</span>
+        <span style="font-weight:600;">${(city.device_rate * 100).toFixed(0)}%</span>
       </div>
       <div style="display:flex; justify-content:space-between;">
-        <span style="color:#8a9bb5">Intensity</span>
-        <span style="font-weight:600; color:#1a2332;">${(city.intensity * 100).toFixed(1)}%</span>
+        <span style="color:var(--text-muted)">Intensity</span>
+        <span style="font-weight:600;">${(city.intensity * 100).toFixed(1)}%</span>
       </div>
     </div>
-    <div style="margin-top:12px; height:6px; background:#f0f4f9; border-radius:4px; overflow:hidden;">
+    <div style="margin-top:12px; height:6px; background:var(--bg-elevated); border-radius:4px; overflow:hidden;">
       <div style="width:${city.intensity * 100}%; height:100%; background:linear-gradient(90deg,#10b981,${color}); border-radius:4px;"></div>
     </div>
   `;
@@ -647,7 +674,7 @@ async function runPrediction() {
       : 'Continue current recycling initiatives and monitor trends closely.';
 
     document.getElementById('result-insight').innerHTML = `
-      <i class="fa-solid fa-lightbulb" style="color:#f97316; margin-right:6px;"></i>
+      <i class="fa-solid fa-lightbulb" style="color:var(--warning); margin-right:6px;"></i>
       Predicted e-waste level is <strong>${level}</strong> for ${year}. ${action}
     `;
 
@@ -736,21 +763,21 @@ function renderScenarioChart(data) {
       plugins: {
         legend: { display: true, position: 'top', labels: { padding: 16, usePointStyle: true } },
         tooltip: {
-          backgroundColor: '#ffffff',
-          borderColor: 'rgba(59,130,246,0.15)',
+          backgroundColor: '#13203a',
+          borderColor: 'rgba(99,148,255,0.2)',
           borderWidth: 1,
-          titleColor: '#1a2332',
-          bodyColor: '#4b5e74',
+          titleColor: '#e8f0ff',
+          bodyColor: '#7b9cc9',
           padding: 14,
           callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)} MMT` }
         }
       },
       scales: {
-        x: { grid: { color: 'rgba(59,130,246,0.06)' } },
+        x: { grid: { color: 'rgba(99,148,255,0.05)' } },
         y: {
-          grid: { color: 'rgba(59,130,246,0.06)' },
+          grid: { color: 'rgba(99,148,255,0.08)' },
           ticks: { callback: v => v + ' MMT' },
-          title: { display: true, text: 'MMT (net of recycling)', color: '#8a9bb5' }
+          title: { display: true, text: 'MMT (net of recycling)', color: '#4a6280' }
         }
       }
     }
@@ -826,7 +853,7 @@ function renderPodium(top3) {
 
 function renderCitiesTable(cities, year) {
   const body = document.getElementById('cities-table-body');
-  const riskColors = { Critical: '#ef4444', High: '#f97316', Medium: '#3b82f6', Low: '#10b981' };
+  const riskColors = { Critical: '#ef4444', High: '#f59e0b', Medium: '#3d8ef8', Low: '#10b981' };
   const trends = ['↑↑', '↑', '↑', '→', '↑', '↑', '↑', '→', '↑', '→', '↑', '→', '↑', '↑', '↑'];
 
   body.innerHTML = cities.map((city, i) => `
@@ -848,10 +875,10 @@ function renderCityBarChart(cities) {
   const ctx = document.getElementById('cityBarChart').getContext('2d');
 
   const riskColors = {
-    Critical: 'rgba(239,68,68,0.75)',
-    High:     'rgba(249,115,22,0.75)',
-    Medium:   'rgba(59,130,246,0.75)',
-    Low:      'rgba(16,185,129,0.75)'
+    Critical: 'rgba(239,68,68,0.8)',
+    High:     'rgba(245,158,11,0.8)',
+    Medium:   'rgba(61,142,248,0.8)',
+    Low:      'rgba(16,185,129,0.8)'
   };
 
   charts['cityBarChart'] = new Chart(ctx, {
@@ -872,11 +899,11 @@ function renderCityBarChart(cities) {
       responsive: true,
       plugins: {
         tooltip: {
-          backgroundColor: '#ffffff',
-          borderColor: 'rgba(59,130,246,0.15)',
+          backgroundColor: '#13203a',
+          borderColor: 'rgba(99,148,255,0.2)',
           borderWidth: 1,
-          titleColor: '#1a2332',
-          bodyColor: '#4b5e74',
+          titleColor: '#e8f0ff',
+          bodyColor: '#7b9cc9',
           padding: 12,
           callbacks: { label: ctx => ` E-Waste: ${ctx.parsed.y} kt` }
         }
@@ -884,7 +911,7 @@ function renderCityBarChart(cities) {
       scales: {
         x: { grid: { display: false } },
         y: {
-          grid: { color: 'rgba(59,130,246,0.06)' },
+          grid: { color: 'rgba(99,148,255,0.08)' },
           ticks: { callback: v => v + ' kt' }
         }
       }
